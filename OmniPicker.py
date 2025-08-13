@@ -1,4 +1,8 @@
 import serial
+import time
+'''
+设置UR5 TCP位置将夹爪末端设置为TCP
+'''
 
 class OmniPicker_Interface:
     def __init__(self,port='/dev/ttyUSB0',baudrate=2000000):
@@ -45,7 +49,7 @@ class OmniPicker_Interface:
         self.ser.close()
         print(f"Disconnected from port {self.ser.portstr} OmniPicker")
 
-    def gripper_half_open(self,can_id=0x00000001,data=[0x00,0x7F,0x7F,0x7F,0x7F,0x7F,0x00,0x00]):
+    def gripper_half_open(self,can_id=0x01):
         # 下行控制 位置，力度，速度，加速度，减速度
         send_can_id_data = bytes([
             0xaa,     # 0  Packet header
@@ -53,7 +57,7 @@ class OmniPicker_Interface:
             # bit5(frame type 0- standard frame (frame ID 2 bytes), 1-extended frame (frame ID 4 bytes))
             # bit4(frame format 0- data frame, 1 remote frame)
             # Bit0~3 Frame data length (0~8)
-            0x01,     # 2  Frame ID data 1    1~8 bit, high bytes at the front, low bytes at the back
+            can_id,     # 2  Frame ID data 1    1~8 bit, high bytes at the front, low bytes at the back
             0x00,     # 3  Frame ID data 2    1~8 bit, high bytes at the front, low bytes at the back
             0x00,     # 4  Frame ID data 3    1~8 bit, high bytes at the front, low bytes at the back
             0x00,     # 5  Frame ID data 4    9~16 bit, high bytes at the front, low bytes at the back
@@ -72,7 +76,7 @@ class OmniPicker_Interface:
         ])
         self.ser.write(send_can_id_data)
 
-    def gripper_open(self,can_id=0x00000001,data=[0x00,0xFF,0x7F,0x7F,0x7F,0x7F,0x00,0x00]):
+    def gripper_open(self,can_id=0x01):
         # 下行控制 位置，力度，速度，加速度，减速度
         send_can_id_data = bytes([
             0xaa,     # 0  Packet header
@@ -80,7 +84,7 @@ class OmniPicker_Interface:
             # bit5(frame type 0- standard frame (frame ID 2 bytes), 1-extended frame (frame ID 4 bytes))
             # bit4(frame format 0- data frame, 1 remote frame)
             # Bit0~3 Frame data length (0~8)
-            0x01,     # 2  Frame ID data 1    1~8 bit, high bytes at the front, low bytes at the back
+            can_id,     # 2  Frame ID data 1    1~8 bit, high bytes at the front, low bytes at the back
             0x00,     # 3  Frame ID data 2    1~8 bit, high bytes at the front, low bytes at the back
             0x00,     # 4  Frame ID data 3    1~8 bit, high bytes at the front, low bytes at the back
             0x00,     # 5  Frame ID data 4    9~16 bit, high bytes at the front, low bytes at the back
@@ -99,7 +103,7 @@ class OmniPicker_Interface:
         ])
         self.ser.write(send_can_id_data)
 
-    def gripper_close(self,can_id=0x00000001,data=[0x00,0x00,0x7F,0x7F,0x7F,0x7F,0x00,0x00]):
+    def gripper_close(self,can_id=0x01):
         # 下行控制 位置，力度，速度，加速度，减速度
         send_can_id_data = bytes([
             0xaa,     # 0  Packet header
@@ -107,7 +111,7 @@ class OmniPicker_Interface:
             # bit5(frame type 0- standard frame (frame ID 2 bytes), 1-extended frame (frame ID 4 bytes))
             # bit4(frame format 0- data frame, 1 remote frame)
             # Bit0~3 Frame data length (0~8)
-            0x01,     # 2  Frame ID data 1    1~8 bit, high bytes at the front, low bytes at the back
+            can_id,     # 2  Frame ID data 1    1~8 bit, high bytes at the front, low bytes at the back
             0x00,     # 3  Frame ID data 2    1~8 bit, high bytes at the front, low bytes at the back
             0x00,     # 4  Frame ID data 3    1~8 bit, high bytes at the front, low bytes at the back
             0x00,     # 5  Frame ID data 4    9~16 bit, high bytes at the front, low bytes at the back
@@ -126,3 +130,43 @@ class OmniPicker_Interface:
         ])
         self.ser.write(send_can_id_data)
 
+    def control(self,can_id=0x01, Pos=0.0, For=100.0, Vel=100.0, Acc=100.0, Dec=100.0):
+        # 下行控制 位置，力度，速度，加速度，减速度
+        Pos = int((max(0,min(100,Pos)) / 100)*255)
+        For = int((max(0,min(100,For)) / 100)*255)
+        Vel = int((max(0,min(100,Vel)) / 100)*255)
+        Acc = int((max(0,min(100,Acc)) / 100)*255)
+        Dec = int((max(0,min(100,Dec)) / 100)*255)
+
+        send_can_id_data = bytes([
+            0xaa,     # 0  Packet header
+            0xe8,     # 1  0xc0 Tyep
+            # bit5(frame type 0- standard frame (frame ID 2 bytes), 1-extended frame (frame ID 4 bytes))
+            # bit4(frame format 0- data frame, 1 remote frame)
+            # Bit0~3 Frame data length (0~8)
+            can_id,     # 2  Frame ID data 1    1~8 bit, high bytes at the front, low bytes at the back
+            0x00,     # 3  Frame ID data 2    1~8 bit, high bytes at the front, low bytes at the back
+            0x00,     # 4  Frame ID data 3    1~8 bit, high bytes at the front, low bytes at the back
+            0x00,     # 5  Frame ID data 4    9~16 bit, high bytes at the front, low bytes at the back
+            #数据帧
+            #---------------------------------------------------------
+            0x00,     # 6  Frame data 1       CAN sends  data 1
+            Pos,     # 7  Frame data 2       CAN sends  data 2
+            For,     # 8  Frame data 3       CAN sends  data 3
+            Vel,     # 9  Frame data 4       CAN sends  data 4
+            Acc,     # 10 Frame data 5       CAN sends  data 5
+            Dec,     # 11 Frame data 6       CAN sends  data 6
+            0x00,     # 12 Frame data 7       CAN sends  data 7
+            0x00,     # 13 Frame data 8       CAN sends  data 8
+            #---------------------------------------------------------
+            0x55,     # 14 Frame data 4       CAN sends  data 4
+        ])
+        self.ser.write(send_can_id_data)
+
+
+'''
+test = OmniPicker_Interface()
+test.control(Pos=100,For=50,Vel=50,Acc=50,Dec=50)
+time.sleep(5)
+test.gripper_close()
+'''
