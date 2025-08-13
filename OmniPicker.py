@@ -6,7 +6,8 @@ import time
 
 class OmniPicker_Interface:
     def __init__(self,port='/dev/ttyUSB0',baudrate=2000000):
-        self.ser = serial.Serial(port, baudrate)
+        self.port = port
+        self.baudrate = baudrate
         self.set_can_baudrate = [
             0xaa,     #  0  Packet header
             0x55,     #  1  Packet header
@@ -34,6 +35,7 @@ class OmniPicker_Interface:
         return checksum & 0xff
     
     def connect(self):
+        self.ser = serial.Serial(self.port, self.baudrate)
         # Calculate checksum
         checksum = self.calculate_checksum(self.set_can_baudrate)
         self.set_can_baudrate.append(checksum)
@@ -44,8 +46,10 @@ class OmniPicker_Interface:
 
         self.ser.write(self.set_can_baudrate)
         print(f"Connected to port {self.ser.portstr} OmniPicker")
+        self.gripper_open()
 
     def disconnect(self):
+        self.gripper_close()
         self.ser.close()
         print(f"Disconnected from port {self.ser.portstr} OmniPicker")
 
@@ -166,7 +170,9 @@ class OmniPicker_Interface:
 
 '''
 test = OmniPicker_Interface()
-test.control(Pos=100,For=50,Vel=50,Acc=50,Dec=50)
+test.connect()
+test.control(Pos=50,For=50,Vel=50,Acc=50,Dec=50)
 time.sleep(5)
 test.gripper_close()
+test.disconnect()
 '''
